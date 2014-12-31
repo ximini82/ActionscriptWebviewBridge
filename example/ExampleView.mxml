@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:ns1="*"
+		xmlns:controls="com.flexcapacitor.controls.*"
+		actionBarVisible="false" backKeyPressed="onBackKeyPressed(event)"
+		creationComplete="view1_creationCompleteHandler(event)" title="{data.image}"
+		xmlns:components="com.flexcapacitor.components.*"
+		addedToStage="addedToStage(event)"
+		implements="net.app.impact.lib.webview.IWebviewController"
+		>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<fx:Script>
+		<![CDATA[
+			import flash.display.JPEGEncoderOptions;
+			
+			import mx.events.FlexEvent;
+			
+			import net.app.impact.lib.input.VideoCapture;
+			import net.app.impact.lib.webview.WebViewBridge;
+			
+			import spark.components.ViewNavigator;
+			public var webView1:StageWebView=new StageWebView();
+			private var bridge:WebViewBridge;
+			private var deviceCameraApp:CameraUI = new CameraUI();
+			private var imageLoader:Loader; 
+			
+			protected function view1_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+				
+				
+			}
+			
+			public function startCapture (t:String):void
+			{
+				var r:Rectangle = webView1.viewPort;
+				r.x = stage.stageWidth;
+				webView1.viewPort =  r;
+				trace("clicked");
+				
+				var c: VideoCapture = new VideoCapture(stage);
+			}
+			
+			protected function onBackKeyPressed(event:FlexEvent):void{
+				webView1.viewPort = null;
+				webView1.dispose();
+				webView1 = null;
+			}
+			
+			
+			protected function backbutton_clickHandler(event:MouseEvent):void
+			{
+				webView1.viewPort = null;
+				webView1.dispose();
+				webView1 = null;
+				navigator.popView();
+			}
+			
+			protected function addedToStage(event:Event):void
+			{
+				webView1.stage=this.stage;
+				
+				webView1.addEventListener(ErrorEvent.ERROR,function(t:*){
+				   //trace("erro");
+				})
+				
+				//resizeSWV();
+				webView1.viewPort=new Rectangle(0,0,stage.stageWidth, stage.stageHeight);
+				
+				
+				var initialURL :String;            
+				
+				
+				
+				// This copies a single file into a subdir of appStorageDir      
+				
+				var source:File = File.applicationDirectory.resolvePath("jqm");            
+				
+				
+				// create file(s) in a subdir of appStorageDir to simplify cleanup                  
+				
+				var destination:File = File.applicationStorageDirectory.resolvePath("jqm");  
+				// now do the copy and create a ref to our HTML file that a browser will understand  
+				
+				source.copyTo(destination, true);        
+				initialURL = "file://" + destination.nativePath ;            
+				var initialURL2:String ="file://" + File.applicationStorageDirectory.resolvePath("assets/page.html").nativePath;  
+				
+				//webView1.loadURL("http://jquerymobile.com/demos/");
+				//webView1.addEventListener(LocationChangeEvent.LOCATION_CHANGING, locationChanging);
+				bridge = new WebViewBridge(webView1,this);
+				bridge.addEventListener(WebViewBridge.JSREADYEVENT,jsReady);
+				webView1.loadURL(initialURL2);
+			}
+			
+			/*private function locationChanging(e:LocationChangeEvent):void {
+				
+				var arr:Array = e.location.split("?");
+				var vars:URLVariables = new URLVariables(arr[1]);
+				//trace (vars.method );
+				if(vars.method)
+				{
+				e.preventDefault();
+				}
+			}
+			*/
+			public function jsReady(t:Event):void{
+			
+				trace("webview is Ready");
+			}
+			public function showObject(name:String,bol:Boolean,Geschlecht:String,alter:Number,bos:Object):void
+			{
+				trace("mein name ist "+name + "es ist " +(bol ? " wahr " : "falsch" ) + "ich bin ein "+Geschlecht + " und schon " + alter +" Jahre alt" );
+				
+				//bridge.call("callme","value",23);
+			}
+			
+			public function makeImage() :void {
+				this.stage.align = StageAlign.TOP_LEFT;
+				this.stage.scaleMode = StageScaleMode.NO_SCALE;
+				
+				if( CameraUI.isSupported )
+				{
+					trace( "Initializing camera..." );
+					
+					deviceCameraApp.addEventListener( MediaEvent.COMPLETE, imageCaptured );
+				//	deviceCameraApp.addEventListener( Event.CANCEL, captureCanceled );
+				//	deviceCameraApp.addEventListener( ErrorEvent.ERROR, cameraError );
+					deviceCameraApp.launch( MediaType.IMAGE );
+				}
+				else
+				{
+					trace( "Camera interface is not supported.");
+				}
+			}
+			
+			private function imageCaptured( event:MediaEvent ):void
+			{
+				trace( "Media captured..." );
+				
+				var imagePromise:MediaPromise = imagePromise2 = event.data;
+				
+				var destination:File = File.applicationStorageDirectory.resolvePath("testwww/"+imagePromise.relativePath);  
+				
+				if(WebViewBridge.isIPHONE)
+				{
+					dataSource = imagePromise.open();
+					
+					if( imagePromise.isAsync )
+					{
+						trace( "Asynchronous media promise." );
+						imageLoader = new Loader();
+						imageLoader.contentLoaderInfo.addEventListener( Event.COMPLETE, asyncImageLoaded );
+						//imageLoader.addEventListener( IOErrorEvent.IO_ERROR, cameraError );
+						imageLoader.loadFilePromise( imagePromise );
+						//var eventSource:IEventDispatcher = dataSource as IEventDispatcher; 
+						//eventSource.addEventListener( Event.COMPLETE, readMediaData ); 
+					}
+					else
+					{
+						trace( "Synchronous media promise." );
+						//imageLoader.loadFilePromise( imagePromise );
+					}
+					
+				}
+				else
+				{
+					imagePromise.file.copyTo(destination, true);
+					
+					var iff:File =File.applicationStorageDirectory.resolvePath("testwww/"+imagePromise.relativePath);  
+					var initialURL2:String ="file://" + File.applicationStorageDirectory.resolvePath("testwww/"+imagePromise.relativePath).nativePath;  
+					
+					bridge.call("openImage",imagePromise.relativePath);
+				}
+				
+			}
+			
+			public var imagePromise2:MediaPromise;
+			public var dataSource:IDataInput;
+			
+			private function asyncImageLoaded( event:Event ):void
+			{
+				trace( "Media loaded in memory." );
+				if(CameraRoll.supportsAddBitmapData){
+						var bitmapData:BitmapData = new BitmapData(loaderInfo.width, loaderInfo.height);
+						bitmapData.draw(event.target.loader);  
+
+						var bytes:ByteArray = new ByteArray();
+						var jpo:JPEGEncoderOptions = new JPEGEncoderOptions(80);
+						bytes = bitmapData.encode(new Rectangle(0,0, int(loaderInfo.width) , int(loaderInfo.height)),jpo , bytes);
+						
+						var now:Date = new Date();
+						var filename:String = "IMG" + now.fullYear + now.month + now.day + now.hours + now.minutes + now.seconds + ".jpg";
+						var f:File = File.applicationStorageDirectory.resolvePath("testwww/"+filename);                                    
+						var stream:FileStream = new FileStream()
+						stream.open(f, FileMode.WRITE);
+						stream.writeBytes(bytes,0,bytes.bytesAvailable);
+						stream.close(); 
+						
+						var c:CameraRoll = new CameraRoll();
+						c.addEventListener(Event.COMPLETE,showMedia);
+						c.addBitmapData(bitmapData);
+						bridge.call("openImage",filename);
+				}
+				
+			}
+			
+			private function readMediaData(t:Event):void { 
+				var imageBytes:ByteArray = new ByteArray();
+				dataSource.readBytes( imageBytes ); 
+				
+				
+				var tempDir:File = File.createTempDirectory(); 
+				var now:Date = new Date();
+				var filename:String = "IMG" + now.fullYear + now.month + now.day + now.hours + now.minutes + now.seconds + ".jpg";
+				var temp:File = tempDir.resolvePath( filename );
+				var stream:FileStream = new FileStream();
+				stream.open( temp, FileMode.WRITE ); 
+				stream.writeBytes( imageBytes );
+				stream.close(); 
+				try { 
+					
+				} catch( e:Error ) 
+				{
+					trace( e );
+					deviceCameraApp.launch( MediaType.IMAGE )
+				}
+				
+				var destination:File = File.applicationStorageDirectory.resolvePath("testwww/"+filename); 
+				temp.copyTo(destination, true);
+				
+				var iff:File =File.applicationStorageDirectory.resolvePath("testwww/"+filename);  
+				
+				bridge.call("openImage","/"+filename);
+			} 
+			
+			
+			
+			
+			
+			private function showMedia( evt:Event ):void
+			{
+				
+				var imagePromise:MediaPromise  = imagePromise2;
+				var destination:File = File.applicationStorageDirectory.resolvePath("testwww/"+imagePromise.relativePath);
+				imagePromise.file.copyTo(destination, true);
+				var iff:File =File.applicationStorageDirectory.resolvePath("testwww/"+imagePromise.relativePath);  
+				var initialURL2:String ="file://" + File.applicationStorageDirectory.resolvePath("testwww/"+imagePromise.relativePath).nativePath;  
+				
+				bridge.call("openImage",imagePromise.relativePath);
+				
+			}
+			
+			private function cameraError( error:ErrorEvent ):void
+			{
+				trace( "Error:" + error.text );
+				NativeApplication.nativeApplication.exit();
+			}
+			
+			public function console(t:String):void
+			{
+				trace("TRACE: "+t);
+			}
+			
+		]]>
+	</fx:Script>
+
+	
+	
+	<s:SpriteVisualElement id="cont"  width="100%" height="100%"/>
+</s:View>

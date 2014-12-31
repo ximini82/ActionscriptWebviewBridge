@@ -1,0 +1,94 @@
+
+
+<!DOCTYPE HTML>
+<html>
+<head>
+<script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
+<script type="text/javascript" src="js/ASB.js"></script>
+<script type="text/javascript" src="js/base64.js"></script>
+<style>
+  .thumb {
+    height: 75px;
+    border: 1px solid #000;
+    margin: 10px 5px 0 0;
+  }
+</style>
+<script type="text/javascript">
+
+ function handleFileSelect(evt) {
+    var files = evt.target.files; // FileList object
+
+    // Loop through the FileList and render image files as thumbnails.
+    for (var i = 0, f; f = files[i]; i++) {
+
+      // Only process image files.
+      if (!f.type.match('image.*')) {
+        continue;
+      }
+
+      var reader = new FileReader();
+
+      // Closure to capture the file information.
+      reader.onload = (function(theFile) {
+        return function(e) {
+          // Render thumbnail.
+         ASB.console(e.target.result+' '+theFile.name);
+          var span = document.createElement('span');
+          span.innerHTML = ['<img class="thumb" src="', e.target.result,
+                            '" title="', escape(theFile.name), '"/>'].join('');
+          document.getElementById('list').insertBefore(span, null);
+        };
+      })(f);
+
+      // Read in the image file as a data URL.
+      reader.readAsDataURL(f);
+    }
+  }
+$(document).ready(function(){
+  document.getElementById('files').addEventListener('change', handleFileSelect, false);
+  ASB.stage = $(document);
+  ASB.dispatchReady  ();
+  });
+  
+
+  function passData() {
+     var test = $('#content').val();
+    window.location.href = ( 
+    	'test:[intern]'+
+      "?value=" + encodeURIComponent(test) +
+      "&method="  + encodeURIComponent('callme'));
+  }
+  
+  function callme(t,c)
+  {
+  	alert(t+c);
+  }
+  
+  function openImage(path)
+  {
+	  alert(path);
+	  $('#cont').attr('src',path);
+  }
+
+
+var c = new Array();
+var obs = {test:20,name:"asdasdasd",bol:true,t:"next"};
+c =["Simon",true,"man",4.2,obs]
+
+</script>
+	
+</head>
+<body>
+<input type="file" id="files" accept="image/*;capture=camera"  name="files" />
+<input type="text" id="content" />
+<br />
+<button type="button" onclick="ASB.callObjectVars('showObject',c);">Click Me!</button> 
+<button type="button" onclick="ASB.console('test');">Console</button> 
+<button type="button" onclick="ASB.call('makeImage');">make Image</button> 
+<button type="button" onclick="ASB.sendraw('startCapture','true');">open direkt</button> 
+<output id="list"></output>
+<img alt="" id="cont" src="">
+</body>
+</html> 
+
+
